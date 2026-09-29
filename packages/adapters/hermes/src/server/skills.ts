@@ -34,6 +34,22 @@ function resolveHermesHome(config: Record<string, unknown>): string {
   return configuredHome ? path.resolve(configuredHome) : os.homedir();
 }
 
+/**
+ * The skills directory the spawned Hermes will read. Hermes honours
+ * HERMES_HOME (that is how profiles work), so an agent configured with
+ * `env.HERMES_HOME` gets its own skill set instead of the operator's
+ * ~/.hermes/skills.
+ */
+export function resolveHermesSkillsHome(config: Record<string, unknown>): string {
+  const env =
+    typeof config.env === "object" && config.env !== null && !Array.isArray(config.env)
+      ? (config.env as Record<string, unknown>)
+      : {};
+  const hermesHome = asString(env.HERMES_HOME);
+  if (hermesHome) return path.join(path.resolve(hermesHome), "skills");
+  return path.join(resolveHermesHome(config), ".hermes", "skills");
+}
+
 interface SkillFrontmatter {
   name?: string;
   description?: string;
@@ -130,8 +146,7 @@ async function buildSkillEntry(
 // ---------------------------------------------------------------------------
 
 async function buildHermesSkillSnapshot(config: Record<string, unknown>): Promise<AdapterSkillSnapshot> {
-  const home = resolveHermesHome(config);
-  const hermesSkillsHome = path.join(home, ".hermes", "skills");
+  const hermesSkillsHome = resolveHermesSkillsHome(config);
 
   // 1. Scan Paperclip-managed skills (bundled with the adapter)
   const paperclipEntries = await readPaperclipRuntimeSkillEntries(config, __moduleDir);
@@ -224,7 +239,7 @@ export async function reconcileHermesPaperclipSkills(
       ]))
     : resolveLegacyPaperclipDesiredSkillNames(config, availableEntries);
   const desiredSet = new Set(desiredSkills);
-  const skillsHome = path.join(resolveHermesHome(config), ".hermes", "skills");
+  const skillsHome = resolveHermesSkillsHome(config);
   await fs.mkdir(skillsHome, { recursive: true });
   const installed = await readInstalledSkillTargets(skillsHome);
   const availableByRuntimeName = new Map(availableEntries.map((entry) => [entry.runtimeName, entry]));

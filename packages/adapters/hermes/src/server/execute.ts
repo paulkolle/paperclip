@@ -386,7 +386,10 @@ export async function execute(
 
   if (!explicitProvider) {
     try {
-      detectedConfig = await detectModel();
+      const hermesHomeEnv = cfgString((config.env as Record<string, unknown> | undefined)?.HERMES_HOME);
+      detectedConfig = await detectModel(
+        hermesHomeEnv ? path.join(hermesHomeEnv, "config.yaml") : undefined,
+      );
     } catch {
       // Non-fatal — detection failure shouldn't block execution
     }
