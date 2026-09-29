@@ -4252,12 +4252,10 @@ export function accessRoutes(
       } else {
         assertLegacyAgentInviteAdapterType(existing.adapterType);
         const existingAgents = await agents.list(companyId);
+        // Fork: a company that skipped onboarding has no CEO yet. Instead of
+        // blocking the join, the first approved agent becomes the root CEO.
         const managerId = resolveJoinRequestAgentManagerId(existingAgents);
-        if (!managerId) {
-          throw conflict(
-            "Join request cannot be approved because this company has no active CEO"
-          );
-        }
+        const becomesCeo = !managerId;
 
         const agentName = deduplicateAgentName(
           existing.agentName ?? "New Agent",
@@ -4270,10 +4268,10 @@ export function accessRoutes(
 
         const created = await agents.create(companyId, {
           name: agentName,
-          role: "general",
-          title: null,
+          role: becomesCeo ? "ceo" : "general",
+          title: becomesCeo ? "CEO" : null,
           status: "idle",
-          reportsTo: managerId,
+          reportsTo: managerId ?? null,
           capabilities: existing.capabilities ?? null,
           adapterType: existing.adapterType ?? "process",
           adapterConfig:
