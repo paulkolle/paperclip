@@ -1646,6 +1646,21 @@ function OnboardingWizardInner({
     setCreatedIssueRef(null);
   }
 
+  /**
+   * Leave onboarding once the organization exists, without hiring an agent.
+   * Agents can be added later from the regular agent pages, where every
+   * adapter and its full configuration (env, custom endpoints) is available.
+   */
+  function handleSkipToDashboard() {
+    const companyId = createdCompanyId;
+    const prefix = createdCompanyPrefix;
+    if (companyId) setSelectedCompanyId(companyId, { source: "route_sync" });
+    reset();
+    closeOnboarding();
+    setRouteDismissed(true);
+    navigate(prefix ? `/${prefix}/dashboard` : "/");
+  }
+
   function handleClose() {
     reset();
     closeOnboarding();
@@ -3131,6 +3146,11 @@ function OnboardingWizardInner({
                     else if (step === 4) handleConnectStepPrimary();
                     else handleLaunchToDashboard();
                   }}
+                  onSkip={
+                    createdCompanyId && (step === 3 || step === 4) && connectPhase === "idle"
+                      ? handleSkipToDashboard
+                      : undefined
+                  }
                 />
               )}
             </div>

@@ -1,6 +1,7 @@
 import { useContext } from "react";
 import { QueryClient, QueryClientContext, useQuery } from "@tanstack/react-query";
 import type { InstanceExperimentalSettings } from "@paperclipai/shared";
+import { ApiError } from "@/api/client";
 import { instanceSettingsApi } from "@/api/instanceSettings";
 import { queryKeys } from "@/lib/queryKeys";
 
@@ -31,6 +32,11 @@ export function useStreamlinedUiEnabled(): { enabled: boolean; loaded: boolean }
       queryKey: queryKeys.instance.experimentalSettings,
       queryFn: () => instanceSettingsApi.getExperimental(),
       enabled: contextClient != null,
+      // Signed-out visitors get 401/403 here. Retrying only delays the auth
+      // gate (and pauses entirely in hidden tabs), so fail fast on auth errors.
+      retry: (failureCount, error) =>
+        !(error instanceof ApiError && (error.status === 401 || error.status === 403)) &&
+        failureCount < 3,
     },
     contextClient ?? getDetachedClient(),
   );

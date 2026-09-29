@@ -29,8 +29,16 @@ export function FooterNav({
   loadingLabel,
   primaryIcon,
   onPrimary,
+  onSkip,
+  skipLabel = "Skip for now",
 }: {
   onBack?: () => void;
+  /**
+   * Leaves the wizard without finishing the current arc. Rendered on the left
+   * next to Back, per the footer rule in DESIGN.md (exit left, primary right).
+   */
+  onSkip?: () => void;
+  skipLabel?: string;
   primaryLabel: string;
   primaryDisabled?: boolean;
   loading?: boolean;
@@ -50,6 +58,7 @@ export function FooterNav({
 
   return (
     <div className="flex items-center justify-between pt-9">
+      <div className="flex items-center gap-2">
       {onBack ? (
         // Same size as the primary, not a tier down. Back is ghost until you
         // point at it, and a shorter pill made the hover surface read as a
@@ -71,6 +80,18 @@ export function FooterNav({
       ) : (
         <span />
       )}
+      {onSkip ? (
+        <Button
+          variant="ghost"
+          size="lg"
+          className="rounded-full text-muted-foreground"
+          onClick={onSkip}
+          disabled={loading}
+        >
+          {skipLabel}
+        </Button>
+      ) : null}
+      </div>
       {/*
         `layout` on the button and `popLayout` on its contents are what make the
         width ease rather than jump: the outgoing label leaves the flow at once,
